@@ -36,7 +36,7 @@ char lastTurnBias = 'L'; // Remembers last turn direction for smarter evasion
 unsigned long lastSensorRead = 0;
 unsigned long lastCommandTime = 0;
 int distFront = 999;
-const int CLEAR_DIST = 50; // cm — distance considered an "open path"
+const int CLEAR_DIST = 90; // cm — distance considered an "open path"
 // LCD tracking to prevent flickering
 String currentLine1 = "";
 String currentLine2 = "";

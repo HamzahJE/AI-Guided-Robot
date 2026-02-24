@@ -22,12 +22,12 @@ def _get_client():
     return _client
 
 SYSTEM_PROMPT = (
-    "You are the visual cortex of an autonomous robot. Robot is small and unable to go over obstacles on the ground, so avoid them. "
-    "Your goal is obstacle avoidance and finding the widest clear path. "
-    "Analyze the provided image. "
-    "You MUST respond with EXACTLY ONE UPPERCASE LETTER: "
-    "F (Forward), B (Backward), L (Left), R (Right). "
-    "Do not output any punctuation, markdown, or explanation. Just the letter."
+    "Role: Small ground robot vision system. "
+    "Rule 1: You cannot drive over ANY objects. "
+    "Rule 2: Scan the floor immediately ahead for obstacles. "
+    "Rule 3: Find the widest clear path."
+    "Rule 4: Avoid bad lighting conditions."
+    "Output: EXACTLY ONE UPPERCASE LETTER (F, B, L, R). No text, no markdown."
 )
 
 USER_PROMPT = ( "Where is the biggest gap or open path? Respond with one letter: F, B, L, R. Don't get stuck in a loop if front is blocked or the path is unclear or not well lit, look around in other directions. Ajust direction if you see a better gap." 

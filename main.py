@@ -76,10 +76,10 @@ def main():
             
             # Context-Aware Prompting (Short-Term Memory)
             dynamic_prompt = (
-                f"You are navigating. Your PREVIOUS command was: {last_goal}. "
-                "Maintain this direction unless the path is blocked or a significantly "
-                "better gap has appeared. Look at the entire image. Where is the clearest "
-                "path right now? Respond with EXACTLY ONE letter: F, B, L, R"
+                f"Last move: {last_goal}. "
+                "Look at the ground directly in front of you. "
+                "If the forward path has ANY obstacle, you MUST turn (L or R) or reverse (B). "
+                "Otherwise, steer towards the widest clear gap. Output exactly 1 letter."
             )
 
             try:

@@ -28,8 +28,8 @@ const int TURN_SPEED = 180;
 const int SENSOR_INTERVAL = 50; // ms
 
 // --- Velocity Persistence Constants ---
-const unsigned long COMMAND_TIMEOUT = 1000;  // ms before slowing down (LLM is thinking)
-const unsigned long EMERGENCY_TIMEOUT = 3000; // ms before full stop (LLM crashed)
+const unsigned long COMMAND_TIMEOUT = 5000;  // ms before slowing down (LLM takes 2-4s)
+const unsigned long EMERGENCY_TIMEOUT = 10000; // ms before full stop (LLM crashed)
 
 // --- State Variables ---
 char currentGoal = 'S';
@@ -102,6 +102,8 @@ void loop() {
   if (now - lastSensorRead >= SENSOR_INTERVAL) {
     lastSensorRead = now;
     distFront = readDistance(TRIG_F, ECHO_F);
+    Serial.print("D:");
+    Serial.println(distFront);
   }
 
   // --- 3. Velocity Persistence & Safety Timeouts ---

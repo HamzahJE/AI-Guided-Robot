@@ -26,11 +26,11 @@ SYSTEM_PROMPT = (
     "Your goal is obstacle avoidance and finding the widest clear path. "
     "Analyze the provided image. "
     "You MUST respond with EXACTLY ONE UPPERCASE LETTER: "
-    "F (Forward), B (Backward), L (Left), R (Right), or S (Stop). "
+    "F (Forward), B (Backward), L (Left), R (Right). "
     "Do not output any punctuation, markdown, or explanation. Just the letter."
 )
 
-USER_PROMPT = "Where is the biggest gap or open path? Respond with one letter: F, B, L, R, or S. Don't get stuck in a loop if front is blocked look around in other directions."
+USER_PROMPT = "Where is the biggest gap or open path? Respond with one letter: F, B, L, R. Don't get stuck in a loop if front is blocked or the path is unclear or not well lit, look around in other directions. Ajust direction if you see a better gap. Always pick the clearest path, even if it means reversing or going sideways."
 
 def get_driving_command(dynamic_prompt, image_path=None):
     """Send an image to the LLM and return a single driving command letter (F/B/L/R/S).

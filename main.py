@@ -79,7 +79,7 @@ def main():
                 f"You are navigating. Your PREVIOUS command was: {last_goal}. "
                 "Maintain this direction unless the path is blocked or a significantly "
                 "better gap has appeared. Look at the entire image. Where is the clearest "
-                "path right now? Respond with EXACTLY ONE letter: F, B, L, R, or S. Avoid getting stuck in loops. If front is blocked, look around in other directions."
+                "path right now? Respond with EXACTLY ONE letter: F, B, L, R"
             )
 
             try:

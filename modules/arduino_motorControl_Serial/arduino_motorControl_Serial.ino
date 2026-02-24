@@ -19,11 +19,12 @@ const int TRIG_F = 7;
 const int ECHO_F = 8; 
 
 // --- Tuning Constants ---
-const int STOP_DIST = 15;       // cm — increased slightly for safety
-const int SLOW_DIST = 40;       // cm — start slowing down
+const int STOP_DIST = 30;       // cm — forward safety buffer
+const int SLOW_DIST = 50;       // cm — start slowing down
+const int VETO_DIST = 50;       // cm — hardware veto: reject LLM 'F' if closer than this
 const int BASE_SPEED = 200;     // PWM 0-255
 const int MIN_SPEED = 90;       // PWM — slowest we'll go
-const int TURN_SPEED = 180;     
+const int TURN_SPEED = 180;
 const int SENSOR_INTERVAL = 50; // ms
 
 // --- Velocity Persistence Constants ---
@@ -31,8 +32,9 @@ const unsigned long COMMAND_TIMEOUT = 1000;  // ms before slowing down (LLM is t
 const unsigned long EMERGENCY_TIMEOUT = 3000; // ms before full stop (LLM crashed)
 
 // --- State Variables ---
-char currentGoal = 'S'; 
+char currentGoal = 'S';
 char lastTurnBias = 'L'; // Remembers last turn direction for smarter evasion
+bool seeking = false;     // True when locked into a turn seeking 90cm clearance
 unsigned long lastSensorRead = 0;
 unsigned long lastCommandTime = 0;
 int distFront = 999;
@@ -62,13 +64,36 @@ void loop() {
   if (Serial.available() > 0) {
     char cmd = Serial.read();
     if (cmd == 'F' || cmd == 'B' || cmd == 'L' || cmd == 'R' || cmd == 'S') {
-      currentGoal = cmd;
       lastCommandTime = millis(); // Reset timeout
-      
+
+      // --- Hardware Veto: reject 'F' if obstacle within VETO_DIST ---
+      if (cmd == 'F' && distFront < VETO_DIST) {
+        // LLM wants forward but it's not safe — start seeking in last known good direction
+        cmd = lastTurnBias;
+        seeking = true;
+        updateLCD("VETO Forward!", "Seek " + String(cmd));
+      }
+
+      // --- Seeking lock: if actively seeking a gap, ignore LLM direction changes ---
+      if (seeking && (cmd == 'L' || cmd == 'R') && cmd != currentGoal && (currentGoal == 'L' || currentGoal == 'R')) {
+        // Don't let LLM flip-flop mid-turn; keep current turn direction
+        Serial.write('A');
+        return;
+      }
+
+      currentGoal = cmd;
+
       // Update turn bias for future memory
-      if (cmd == 'L' || cmd == 'R') lastTurnBias = cmd; 
-      
-      Serial.write('A'); // Send ACK back to Pi silently
+      if (cmd == 'L' || cmd == 'R') {
+        lastTurnBias = cmd;
+        seeking = true; // Any turn command enters seeking mode
+      }
+
+      if (cmd == 'F' || cmd == 'S' || cmd == 'B') {
+        seeking = false; // Clear seeking on non-turn commands
+      }
+
+      Serial.write('A'); // Send ACK back to Pi
     }
   }
 
@@ -105,52 +130,46 @@ void loop() {
 
   if (currentGoal == 'F') {
     if (distFront <= STOP_DIST) {
-      // BLOCKED: Smart Pivot & Peek
-      updateLCD("BLOCKED!", "Pivoting...");
-      stopMotors();
-      delay(100);
-      
-      // Arc backwards based on last known good direction
-      if (lastTurnBias == 'L') {
-        driveMotors(MIN_SPEED, BASE_SPEED, false); // Arc Left Back
-      } else {
-        driveMotors(BASE_SPEED, MIN_SPEED, false); // Arc Right Back
+      // BLOCKED while going forward — autonomously start seeking a gap
+      currentGoal = lastTurnBias;
+      seeking = true;
+      updateLCD("BLOCKED! Seek", "Turning " + String(currentGoal));
+      // Fall through to turn logic below
+    } else {
+      // Dynamic braking
+      if (distFront < SLOW_DIST) {
+        currentSpeed = map(distFront, STOP_DIST, SLOW_DIST, MIN_SPEED, currentSpeed);
+        currentSpeed = constrain(currentSpeed, MIN_SPEED, BASE_SPEED);
       }
-      delay(350);
-      
-      stopMotors();
-      currentGoal = 'S'; // Wait for LLM to send new command based on new view
+      driveMotors(currentSpeed, currentSpeed, true);
       return;
     }
+  }
 
-    // Dynamic braking
-    if (distFront < SLOW_DIST) {
-      currentSpeed = map(distFront, STOP_DIST, SLOW_DIST, MIN_SPEED, currentSpeed);
-      currentSpeed = constrain(currentSpeed, MIN_SPEED, BASE_SPEED);
-    }
-    driveMotors(currentSpeed, currentSpeed, true);
+  if (currentGoal == 'B') {
+    driveMotors(BASE_SPEED, BASE_SPEED, false);
     return;
   }
 
-  if (currentGoal == 'B') driveMotors(BASE_SPEED, BASE_SPEED, false);
-  // --- TURN LEFT OR RIGHT (Acoustic Seeking) ---
+  // --- TURN LEFT OR RIGHT (Keep turning until 90cm clear) ---
   if (currentGoal == 'L' || currentGoal == 'R') {
-    
+
     // Check if the sensor sees a clear gap while we are turning
-    if (distFront > CLEAR_DIST) {
+    if (distFront >= CLEAR_DIST) {
       // GAP FOUND! Stop turning and auto-switch to Forward
-      currentGoal = 'F'; 
+      currentGoal = 'F';
+      seeking = false;
       updateLCD("Gap Found!", "Auto-Forward");
       driveMotors(BASE_SPEED, BASE_SPEED, true);
-      return; 
+      return;
     }
 
     // Otherwise, keep turning to look for a gap
     if (currentGoal == 'L') {
-      setMotor(M1_A, M1_B, TURN_SPEED, false); 
+      setMotor(M1_A, M1_B, TURN_SPEED, false);
       setMotor(M2_A, M2_B, TURN_SPEED, true);
     } else {
-      setMotor(M1_A, M1_B, TURN_SPEED, true); 
+      setMotor(M1_A, M1_B, TURN_SPEED, true);
       setMotor(M2_A, M2_B, TURN_SPEED, false);
     }
     return;

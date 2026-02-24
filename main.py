@@ -25,8 +25,20 @@ def open_serial(port=SERIAL_PORT, baud=BAUD_RATE):
     print(f"[serial] Connected to Arduino on {port} @ {baud}")
     return ser
 
+def read_front_distance(ser):
+    """Read any pending sensor telemetry (D:<cm>) from Arduino and return latest distance."""
+    dist = -1
+    while ser.in_waiting:
+        try:
+            line = ser.readline().decode(errors='ignore').strip()
+            if line.startswith('D:'):
+                dist = int(line[2:])
+        except (ValueError, UnicodeDecodeError):
+            pass
+    return dist
+
 def send_goal(ser, goal):
-    ser.reset_input_buffer() 
+    ser.reset_input_buffer()
     ser.write(goal.encode())
     time.sleep(0.05)
     ack = ser.read(1).decode(errors='ignore')
@@ -60,25 +72,33 @@ def main():
     send_goal(ser, 'S')
 
     last_goal = 'S'
+    front_dist = -1
 
     try:
         while True:
             global latest_image_ready
-            
+
+            # Read latest sensor telemetry from Arduino
+            d = read_front_distance(ser)
+            if d >= 0:
+                front_dist = d
+
             # Wait for the camera thread to have a fresh frame ready
             if not latest_image_ready:
                 time.sleep(0.05)
                 continue
-                
+
             latest_image_ready = False # Consume the frame
 
-            print(f"[llm] Processing frame. Last action was '{last_goal}'...")
-            
+            print(f"[llm] Processing frame. Last action was '{last_goal}', front dist: {front_dist}cm")
+
             # Context-Aware Prompting (Short-Term Memory)
+            dist_info = f"Ultrasonic sensor: front obstacle at {front_dist}cm. " if front_dist >= 0 else ""
             dynamic_prompt = (
-                f"Last move: {last_goal}. "
+                f"Last move: {last_goal}. {dist_info}"
                 "Look at the ground directly in front of you. "
-                "If the forward path has ANY obstacle, you MUST turn (L or R) or reverse (B). "
+                "If the forward path has ANY obstacle within 50cm, you MUST turn (L or R) — do NOT say F. "
+                "Pick a turn direction and commit to it — do not alternate between L and R. "
                 "Otherwise, steer towards the widest clear gap. Output exactly 1 letter."
             )
 

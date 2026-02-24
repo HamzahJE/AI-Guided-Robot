@@ -82,9 +82,8 @@ def get_driving_command(dynamic_prompt, image_path=None):
         response = client.chat.completions.create(
             model=os.environ['MODEL'],
             messages=messages,
-            # max_tokens=5, 
-            max_completion_tokens=5,   
-            temperature=1.0,  
+            max_completion_tokens=20,
+            temperature=1.0,
         )
 
         raw = (response.choices[0].message.content or '').strip().upper()

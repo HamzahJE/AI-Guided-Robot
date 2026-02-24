@@ -38,12 +38,17 @@ def read_front_distance(ser):
     return dist
 
 def send_goal(ser, goal):
-    ser.reset_input_buffer()
     ser.write(goal.encode())
-    time.sleep(0.05)
-    ack = ser.read(1).decode(errors='ignore')
-    if ack == 'A':
-        print(f"[arduino] ACK — goal '{goal}' applied")
+    deadline = time.time() + 0.15
+    while time.time() < deadline:
+        if ser.in_waiting:
+            b = ser.read(1).decode(errors='ignore')
+            if b == 'A':
+                print(f"[arduino] ACK — goal '{goal}' applied")
+                return True
+        else:
+            time.sleep(0.01)
+    return False
 
 def camera_worker(stop_event):
     """Background thread continuously capturing the latest frame."""

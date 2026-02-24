@@ -71,7 +71,7 @@ def get_driving_command(dynamic_prompt, image_path=None):
                     "type": "image_url", 
                     "image_url": {
                         "url": f"data:image/jpeg;base64,{imagedata}",
-                        "detail": "low" 
+                         "detail": "low" 
                     }
                 }
             ]
@@ -82,11 +82,12 @@ def get_driving_command(dynamic_prompt, image_path=None):
         response = client.chat.completions.create(
             model=os.environ['MODEL'],
             messages=messages,
-            # max_tokens=5,    
-            # temperature=0.0   
+            # max_tokens=5, 
+            max_completion_tokens=5,   
+            temperature=1.0,  
         )
 
-        raw = response.choices[0].message.content.strip().upper()
+        raw = (response.choices[0].message.content or '').strip().upper()
         
         # Safety Net 2: Aggressive output filtering
         valid_commands = ['F', 'B', 'L', 'R', 'S']

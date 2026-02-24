@@ -22,7 +22,7 @@ def _get_client():
     return _client
 
 SYSTEM_PROMPT = (
-    "You are the visual cortex of an autonomous competition robot. "
+    "You are the visual cortex of an autonomous robot. Robot is small and unable to go over obstacles on the ground, so avoid them. "
     "Your goal is obstacle avoidance and finding the widest clear path. "
     "Analyze the provided image. "
     "You MUST respond with EXACTLY ONE UPPERCASE LETTER: "
@@ -30,7 +30,9 @@ SYSTEM_PROMPT = (
     "Do not output any punctuation, markdown, or explanation. Just the letter."
 )
 
-USER_PROMPT = "Where is the biggest gap or open path? Respond with one letter: F, B, L, R. Don't get stuck in a loop if front is blocked or the path is unclear or not well lit, look around in other directions. Ajust direction if you see a better gap. Always pick the clearest path, even if it means reversing or going sideways."
+USER_PROMPT = ( "Where is the biggest gap or open path? Respond with one letter: F, B, L, R. Don't get stuck in a loop if front is blocked or the path is unclear or not well lit, look around in other directions. Ajust direction if you see a better gap." 
+               "Always pick the clearest path, even if it means reversing or going sideways."
+               )
 
 def get_driving_command(dynamic_prompt, image_path=None):
     """Send an image to the LLM and return a single driving command letter (F/B/L/R/S).

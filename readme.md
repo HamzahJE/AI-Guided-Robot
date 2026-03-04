@@ -181,7 +181,7 @@ First, clone the project repository from GitHub to your home directory. You will
 
 ```bash
 # Clone the repository (replace with your fork's URL if needed)
-git clone https://github.com/hamzahjed/AI-Driver-Car.git ~/AI-Driver-Car
+git clone https://github.com/HamzahJE/AI-Guided-Robot.git ~/AI-Driver-Car
 cd ~/AI-Driver-Car
 ```
 
